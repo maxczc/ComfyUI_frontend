@@ -1,4 +1,4 @@
-import { app } from '../../../scripts/app.js'
+import { app } from '../../../scripts/app.ts'
 
 // Adds context menu entries, code partly from pyssssscustom-scripts
 

@@ -1,7 +1,7 @@
-import { setWidgetConfig } from '../../../extensions/core/widgetInputs.js'
-import { api } from '../../../scripts/api.js'
-import { app } from '../../../scripts/app.js'
-import { applyTextReplacements } from '../../../scripts/utils.js'
+import { setWidgetConfig } from '../../../extensions/core/widgetInputs.ts'
+import { api } from '../../../scripts/api.ts'
+import { app } from '../../../scripts/app.ts'
+import { applyTextReplacements } from '../../../scripts/utils.ts'
 
 function chainCallback(object, property, callback) {
   if (object == undefined) {

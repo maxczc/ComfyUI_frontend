@@ -1,5 +1,5 @@
-import { api } from '../../../scripts/api.js'
-import { app } from '../../../scripts/app.js'
+import { api } from '../../../scripts/api.ts'
+import { app } from '../../../scripts/app.ts'
 
 app.registerExtension({
   name: 'KJNodes.browserstatus',

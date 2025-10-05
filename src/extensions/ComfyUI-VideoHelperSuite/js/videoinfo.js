@@ -1,4 +1,4 @@
-import { app } from '../../../scripts/app.js'
+import { app } from '../../../scripts/app.ts'
 
 function getVideoMetadata(file) {
   return new Promise((r) => {
