@@ -20,8 +20,7 @@ const VITE_REMOTE_DEV = process.env.VITE_REMOTE_DEV === 'true'
 const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
 const DISABLE_VUE_PLUGINS = process.env.DISABLE_VUE_PLUGINS === 'true'
 
-const DEV_SERVER_COMFYUI_URL =
-  process.env.DEV_SERVER_COMFYUI_URL || 'http://127.0.0.1:8188'
+const DEV_SERVER_COMFYUI_URL = process.env.DEV_SERVER_COMFYUI_URL || 'http://127.0.0.1:8188'
 
 export default defineConfig({
   base: '',
@@ -37,11 +36,18 @@ export default defineConfig({
     },
     proxy: {
       '/internal': {
-        target: DEV_SERVER_COMFYUI_URL
+        target: DEV_SERVER_COMFYUI_URL,
+        changeOrigin: true,
+        secure: false
       },
 
       '/api': {
         target: DEV_SERVER_COMFYUI_URL,
+        changeOrigin: true,
+        secure: false,
+        timeout: 30000,
+        proxyTimeout: 30000,
+
         // Return empty array for extensions API as these modules
         // are not on vite's dev server.
         bypass: (req, res, _options) => {
@@ -54,31 +60,40 @@ export default defineConfig({
 
       '/ws': {
         target: DEV_SERVER_COMFYUI_URL,
-        ws: true
+        ws: true,
+        changeOrigin: true,
+        secure: false,
+        timeout: 30000
       },
 
       '/workflow_templates': {
-        target: DEV_SERVER_COMFYUI_URL
+        target: DEV_SERVER_COMFYUI_URL,
+        changeOrigin: true,
+        secure: false
       },
 
       // Proxy extension assets (images/videos) under /extensions to the ComfyUI backend
       '/extensions': {
         target: DEV_SERVER_COMFYUI_URL,
-        changeOrigin: true
+        changeOrigin: true,
+        secure: false
       },
 
       // Proxy docs markdown from backend
       '/docs': {
         target: DEV_SERVER_COMFYUI_URL,
-        changeOrigin: true
+        changeOrigin: true,
+        secure: false
       },
 
       ...(!DISABLE_TEMPLATES_PROXY
         ? {
-            '/templates': {
-              target: DEV_SERVER_COMFYUI_URL
-            }
+          '/templates': {
+            target: DEV_SERVER_COMFYUI_URL,
+            changeOrigin: true,
+            secure: false
           }
+        }
         : {}),
 
       '/testsubrouteindex': {
