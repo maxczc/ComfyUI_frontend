@@ -10,11 +10,11 @@
       <BottomPanel />
     </template>
     <template #graph-canvas-panel>
-      <div class="absolute top-0 left-0 w-auto max-w-full pointer-events-auto">
+      <!-- <div class="absolute top-0 left-0 w-auto max-w-full pointer-events-auto">
         <SecondRowWorkflowTabs
           v-if="workflowTabsPosition === 'Topbar (2nd-row)'"
         />
-      </div>
+      </div> -->
       <GraphCanvasMenu v-if="canvasMenuEnabled" class="pointer-events-auto" />
 
       <MiniMap
@@ -425,8 +425,8 @@ onMounted(async () => {
   )
 
   // Restore workflow and workflow tabs state from storage
-  await workflowPersistence.restorePreviousWorkflow()
-  workflowPersistence.restoreWorkflowTabsState()
+  // await workflowPersistence.restorePreviousWorkflow()
+  // workflowPersistence.restoreWorkflowTabsState()
 
   // Initialize release store to fetch releases from comfy-api (fire-and-forget)
   const { useReleaseStore } = await import(

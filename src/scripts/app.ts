@@ -195,7 +195,7 @@ export class ComfyApp {
   canvasContainer: HTMLElement
   menu: ComfyAppMenu
   // Set by Comfy.Clipspace extension
-  openClipspace: () => void = () => {}
+  openClipspace: () => void = () => { }
 
   private positionConversion?: {
     clientPosToCanvasPos: (pos: Vector2) => Vector2
@@ -764,7 +764,7 @@ export class ComfyApp {
 
     this.canvasElRef.value = canvasEl
 
-    await useWorkspaceStore().workflow.syncWorkflows()
+    // await useWorkspaceStore().workflow.syncWorkflows()
     await useSubgraphStore().fetchSubgraphs()
     await useExtensionService().loadExtensions()
 
@@ -1324,7 +1324,7 @@ export class ComfyApp {
                       .activeWorkflow as ComfyWorkflow
                   })
                 }
-              } catch (error) {}
+              } catch (error) { }
             }
           } catch (error: unknown) {
             useDialogService().showErrorDialog(error, {
@@ -1596,7 +1596,7 @@ export class ComfyApp {
                 // @ts-expect-error fixme ts strict error
                 toSlot = node.inputs?.length - 1
               }
-            } catch (error) {}
+            } catch (error) { }
           }
           if (toSlot != null || toSlot !== -1) {
             // @ts-expect-error fixme ts strict error
@@ -1634,7 +1634,7 @@ export class ComfyApp {
                 // @ts-expect-error fixme ts strict error
                 toSlot = node.inputs?.length - 1
               }
-            } catch (error) {}
+            } catch (error) { }
           }
           if (toSlot != null || toSlot !== -1) {
             // @ts-expect-error fixme ts strict error

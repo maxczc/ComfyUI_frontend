@@ -1,8 +1,8 @@
 <template>
   <div class="comfyui-body grid h-full w-full overflow-hidden">
-    <div id="comfyui-body-top" class="comfyui-body-top">
+    <!-- <div id="comfyui-body-top" class="comfyui-body-top">
       <TopMenubar v-if="showTopMenu" />
-    </div>
+    </div> -->
     <div id="comfyui-body-bottom" class="comfyui-body-bottom">
       <TopMenubar v-if="showBottomMenu" />
     </div>
@@ -49,10 +49,13 @@ import { i18n } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { blankGraph } from '@/scripts/defaultGraph'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
+import { iframeService } from '@/services/iframeService'
 import { useKeybindingService } from '@/services/keybindingService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -184,10 +187,10 @@ const init = () => {
   app.extensionManager = useWorkspaceStore()
 }
 
-const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
+// const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
 const onStatus = async (e: CustomEvent<StatusWsMessageStatus>) => {
-  queuePendingTaskCountStore.update(e)
-  await queueStore.update()
+  // queuePendingTaskCountStore.update(e)
+  // await queueStore.update()
 }
 
 const onExecutionSuccess = async () => {
@@ -237,6 +240,7 @@ onBeforeUnmount(() => {
   api.removeEventListener('reconnecting', onReconnecting)
   api.removeEventListener('reconnected', onReconnected)
   executionStore.unbindExecutionEvents()
+  iframeService.destroy()
 })
 
 useEventListener(window, 'keydown', useKeybindingService().keybindHandler)
@@ -278,6 +282,146 @@ const onGraphReady = () => {
     // node search is triggered
     useNodeDefStore().nodeSearchService.searchNode('')
   }, 1000)
+  // 暴露对外API方法
+  setupIframeAPI()
+}
+// iframe对外API方法
+const setupIframeAPI = () => {
+  let autoSaveEnabled = false
+  let saveTimeout: any | null = null
+
+  const autoSave = async () => {
+    if (!autoSaveEnabled) return
+    try {
+      const p = await app.graphToPrompt()
+      const workflowData = JSON.stringify(p.workflow, null, 2)
+      // 通知父窗口自动保存
+      iframeService.notify('auto-save', workflowData)
+    } catch (error) {
+      console.error('Auto save failed:', error)
+    }
+  }
+
+  const scheduleAutoSave = () => {
+    if (saveTimeout) clearTimeout(saveTimeout)
+    saveTimeout = setTimeout(autoSave, 1000) // 1秒延迟保存
+  }
+
+  // 监听图形变化
+  const setupAutoSaveListeners = () => {
+    if (!app.graph) return
+
+    // 监听节点变化
+    app.graph.onNodeAdded = (node: any) => {
+      console.log('nodeChange', 'nodeChange')
+      scheduleAutoSave()
+      iframeService.notify('node-added', { id: node.id, type: node.type })
+
+      // 监听节点属性变化
+      const originalOnPropertyChanged = node.onPropertyChanged
+      node.onPropertyChanged = function (...args: any[]) {
+        scheduleAutoSave()
+        iframeService.notify('node-changed', {
+          id: node.id,
+          property: args[0],
+          value: args[1]
+        })
+        return originalOnPropertyChanged?.apply(this, args)
+      }
+    }
+
+    app.graph.onNodeRemoved = (node: any) => {
+      scheduleAutoSave()
+      iframeService.notify('node-removed', { id: node.id, type: node.type })
+    }
+
+    app.graph.onConnectionChange = (node: any) => {
+      scheduleAutoSave()
+      iframeService.notify('connection-changed', { nodeId: node?.id })
+    }
+  }
+
+  const workflowService = useWorkflowService()
+
+  const iframeAPI = {
+    // 上传工作流 - 触发文件选择
+    upload: () => {
+      app.ui.loadFile()
+    },
+
+    // 导出工作流 - 使用workflowService导出
+    export: async () => {
+      await workflowService.exportWorkflow(`workflow_${Date.now()}`, 'workflow')
+    },
+
+    // 重置画布
+    reset: () => {
+      app.graph.clear()
+      app.canvas.draw(true, true)
+    },
+
+    // 清空画布
+    clear: () => {
+      app.graph.clear()
+      app.canvas.draw(true, true)
+    },
+
+    getWorkflowInfo: (): Promise<string> => {
+      return useWorkflowService().getWorkflow()
+    },
+
+    // 运行工作流
+    run: async () => {
+      console.log('run', 'run')
+      await app.queuePrompt(0, 1)
+    },
+
+    // 启用/禁用自动保存
+    enableAutoSave: (enabled: boolean) => {
+      autoSaveEnabled = enabled
+      if (enabled) {
+        setupAutoSaveListeners()
+      }
+    },
+
+    // 加载工作流并刷新节点（不刷新页面）
+    loadWorkflow: async (workflow: string | object) => {
+      console.log('Loading workflow:', workflow)
+      try {
+        if (workflow) {
+          const workflowData =
+            typeof workflow === 'string' ? JSON.parse(workflow) : workflow
+          app.graph.clear()
+          await app.loadGraphData(workflowData)
+        } else {
+          app.graph.clear()
+          await app.loadGraphData(blankGraph)
+        }
+
+        app.canvas.draw(true, true)
+      } catch (error) {
+        console.error('Failed to load workflow:', error)
+        throw error
+      }
+    },
+
+    // 获取工作流缩略图
+    getThumbnail: async (): Promise<string> => {
+      try {
+        const canvas = app.canvas.canvas
+        return canvas.toDataURL('image/png')
+      } catch (error) {
+        console.error('Failed to get thumbnail:', error)
+        throw error
+      }
+    }
+  }
+
+  // 暴露到全局window对象
+  ;(window as any).comfyAPI = iframeAPI
+
+  // 初始化 iframe 服务
+  iframeService.init(iframeAPI)
 }
 </script>
 

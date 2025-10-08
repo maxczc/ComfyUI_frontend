@@ -57,6 +57,13 @@ export const useWorkflowService = () => {
     workflow.extra.ds = { scale, offset: [x, y] }
   }
 
+  const getWorkflow = async (): Promise<string> => {
+    const p = await app.graphToPrompt()
+    addViewRestore(p.workflow)
+    const json = JSON.stringify(p.workflow, null, 2)
+    return json
+  }
+
   /**
    * Export the current workflow as a JSON file
    * @param filename The filename to save the workflow as
@@ -402,6 +409,7 @@ export const useWorkflowService = () => {
     loadPreviousOpenedWorkflow,
     duplicateWorkflow,
     afterLoadNewGraph,
-    beforeLoadNewGraph
+    beforeLoadNewGraph,
+    getWorkflow
   }
 }

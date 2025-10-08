@@ -102,10 +102,10 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
    * Register the core sidebar tabs.
    */
   const registerCoreSidebarTabs = () => {
-    registerSidebarTab(useQueueSidebarTab())
+    // registerSidebarTab(useQueueSidebarTab())
     registerSidebarTab(useNodeLibrarySidebarTab())
     registerSidebarTab(useModelLibrarySidebarTab())
-    registerSidebarTab(useWorkflowsSidebarTab())
+    // registerSidebarTab(useWorkflowsSidebarTab())
 
     const menuStore = useMenuItemStore()
 
@@ -113,7 +113,6 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
       ['View'],
       [
         'Workspace.ToggleBottomPanel',
-        'Comfy.BrowseTemplates',
         'Workspace.ToggleFocusMode',
         'Comfy.ToggleCanvasInfo',
         'Comfy.Canvas.ToggleMinimap',
