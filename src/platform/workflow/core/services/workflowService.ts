@@ -18,7 +18,9 @@ import { useDialogService } from '@/services/dialogService'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { appendJsonExt } from '@/utils/formatUtil'
-
+import type { ComfyApiWorkflow } from '@/schemas/comfyWorkflowSchema'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { generateNodeConfigs } from '@/utils/workflowUtil'
 export const useWorkflowService = () => {
   const settingStore = useSettingStore()
   const workflowStore = useWorkflowStore()
@@ -62,6 +64,19 @@ export const useWorkflowService = () => {
     addViewRestore(p.workflow)
     const json = JSON.stringify(p.workflow, null, 2)
     return json
+  }
+
+  const getDraftInfo = async (): Promise<string> => {
+    const p = await app.graphToPrompt()
+    addViewRestore(p.workflow)
+    const nodeDefStore = useNodeDefStore()
+    const objectInfo = nodeDefStore.nodeDefsByName
+    const configs = generateNodeConfigs(p.workflow, objectInfo);
+    return JSON.stringify({
+      workflow: p.workflow,
+      prompt: p.output as ComfyApiWorkflow,
+      configs,
+    })
   }
 
   /**
@@ -410,6 +425,7 @@ export const useWorkflowService = () => {
     duplicateWorkflow,
     afterLoadNewGraph,
     beforeLoadNewGraph,
-    getWorkflow
+    getWorkflow,
+    getDraftInfo
   }
 }

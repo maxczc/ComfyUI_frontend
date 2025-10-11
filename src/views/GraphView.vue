@@ -367,7 +367,7 @@ const setupIframeAPI = () => {
     },
 
     getWorkflowInfo: (): Promise<string> => {
-      return useWorkflowService().getWorkflow()
+      return useWorkflowService().getDraftInfo()
     },
 
     // 运行工作流
@@ -384,21 +384,12 @@ const setupIframeAPI = () => {
       }
     },
 
-    // 加载工作流并刷新节点（不刷新页面）
+    // 加载工作流
     loadWorkflow: async (workflow: string | object) => {
-      console.log('Loading workflow:', workflow)
       try {
-        if (workflow) {
-          const workflowData =
-            typeof workflow === 'string' ? JSON.parse(workflow) : workflow
-          app.graph.clear()
-          await app.loadGraphData(workflowData)
-        } else {
-          app.graph.clear()
-          await app.loadGraphData(blankGraph)
-        }
-
-        app.canvas.draw(true, true)
+        const workflowData =
+          typeof workflow === 'string' ? JSON.parse(workflow) : workflow
+        await app.loadGraphData(workflowData, true, true, null)
       } catch (error) {
         console.error('Failed to load workflow:', error)
         throw error
