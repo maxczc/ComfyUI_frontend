@@ -139,7 +139,7 @@ interface BackendApiCalls {
 }
 
 /** Dictionary of all api calls */
-interface ApiCalls extends BackendApiCalls, FrontendApiCalls {}
+interface ApiCalls extends BackendApiCalls, FrontendApiCalls { }
 
 /** Used to create a discriminating union on type value. */
 interface ApiMessage<T extends keyof ApiCalls> {
@@ -147,7 +147,7 @@ interface ApiMessage<T extends keyof ApiCalls> {
   data: ApiCalls[T]
 }
 
-export class UnauthorizedError extends Error {}
+export class UnauthorizedError extends Error { }
 
 /** Ensures workers get a fair shake. */
 type Unionize<T> = T[keyof T]
@@ -173,10 +173,10 @@ type AsCustomEvents<T> = {
 /** Handles differing event and API signatures. */
 type ApiToEventType<T = ApiCalls> = {
   [K in keyof T]: K extends 'status'
-    ? StatusWsMessageStatus
-    : K extends 'executing'
-      ? NodeId
-      : T[K]
+  ? StatusWsMessageStatus
+  : K extends 'executing'
+  ? NodeId
+  : T[K]
 }
 
 /** Dictionary of types used in the detail for a custom event */
@@ -579,7 +579,7 @@ export class ComfyApi extends EventTarget {
    * Initialises sockets and realtime updates
    */
   init() {
-    this.#createSocket()
+    // this.#createSocket()
   }
 
   /**
@@ -956,11 +956,11 @@ export class ComfyApi extends EventTarget {
       throwOnError?: boolean
       full_info?: boolean
     } = {
-      overwrite: true,
-      stringify: true,
-      throwOnError: true,
-      full_info: false
-    }
+        overwrite: true,
+        stringify: true,
+        throwOnError: true,
+        full_info: false
+      }
   ): Promise<Response> {
     const resp = await this.fetchApi(
       `/userdata/${encodeURIComponent(file)}?overwrite=${options.overwrite}&full_info=${options.full_info}`,
