@@ -32,7 +32,7 @@ export class IframeService {
    * 处理来自父窗口的消息
    */
   private async handleMessage(event: MessageEvent) {
-    const { type, method, params, id } = event.data
+    const { type, method, params, id, data } = event.data
 
     try {
       let result
@@ -46,6 +46,12 @@ export class IframeService {
           result = {
             ready: !!this.api,
             methods: this.api ? Object.keys(this.api) : []
+          }
+          break
+        case 'execution-progress':
+          // 接收父窗口传入的执行进度
+          if (this.api && this.api.handleExecutionProgress) {
+            this.api.handleExecutionProgress(data)
           }
           break
       }

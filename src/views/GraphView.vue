@@ -191,10 +191,20 @@ const init = () => {
 const onStatus = async (e: CustomEvent<StatusWsMessageStatus>) => {
   // queuePendingTaskCountStore.update(e)
   // await queueStore.update()
+  iframeService.notify('execution-status', e.detail)
 }
 
 const onExecutionSuccess = async () => {
   await queueStore.update()
+  iframeService.notify('execution-success', '')
+}
+
+const onProgress = (e: CustomEvent) => {
+  iframeService.notify('execution-progress', e.detail)
+}
+
+const onExecuting = (e: CustomEvent) => {
+  iframeService.notify('execution-executing', e.detail)
 }
 
 const reconnectingMessage: ToastMessageOptions = {
@@ -220,12 +230,24 @@ const onReconnected = () => {
   }
 }
 
+const handleShortcutKeys = (e: KeyboardEvent) => {
+  // Alt+S: 保存
+  if (e.altKey && e.code === 'KeyS') {
+    e.preventDefault()
+    iframeService.notify('shortcut-save', '')
+  }
+}
+
 onMounted(() => {
   api.addEventListener('status', onStatus)
   api.addEventListener('execution_success', onExecutionSuccess)
+  api.addEventListener('progress', onProgress)
+  api.addEventListener('executing', onExecuting)
   api.addEventListener('reconnecting', onReconnecting)
   api.addEventListener('reconnected', onReconnected)
   executionStore.bindExecutionEvents()
+
+  window.addEventListener('keydown', handleShortcutKeys)
 
   try {
     init()
@@ -237,9 +259,14 @@ onMounted(() => {
 onBeforeUnmount(() => {
   api.removeEventListener('status', onStatus)
   api.removeEventListener('execution_success', onExecutionSuccess)
+  api.removeEventListener('progress', onProgress)
+  api.removeEventListener('executing', onExecuting)
   api.removeEventListener('reconnecting', onReconnecting)
   api.removeEventListener('reconnected', onReconnected)
   executionStore.unbindExecutionEvents()
+
+  window.removeEventListener('keydown', handleShortcutKeys)
+
   iframeService.destroy()
 })
 
@@ -293,10 +320,10 @@ const setupIframeAPI = () => {
   const autoSave = async () => {
     if (!autoSaveEnabled) return
     try {
-      const p = await app.graphToPrompt()
-      const workflowData = JSON.stringify(p.workflow, null, 2)
+      // const p = await app.graphToPrompt()
+      // const workflowData = JSON.stringify(p.workflow, null, 2)
       // 通知父窗口自动保存
-      iframeService.notify('auto-save', workflowData)
+      iframeService.notify('auto-save', '')
     } catch (error) {
       console.error('Auto save failed:', error)
     }
@@ -304,46 +331,59 @@ const setupIframeAPI = () => {
 
   const scheduleAutoSave = () => {
     if (saveTimeout) clearTimeout(saveTimeout)
-    saveTimeout = setTimeout(autoSave, 1000) // 1秒延迟保存
+    saveTimeout = setTimeout(autoSave, 500) // 500ms节流
   }
 
   // 监听图形变化
-  const setupAutoSaveListeners = () => {
+  const setupWorkflowChangeListeners = () => {
     if (!app.graph) return
+
+    const notifyChange = () => {
+      scheduleAutoSave()
+    }
 
     // 监听节点变化
     app.graph.onNodeAdded = (node: any) => {
-      console.log('nodeChange', 'nodeChange')
-      scheduleAutoSave()
-      iframeService.notify('node-added', { id: node.id, type: node.type })
+      notifyChange()
 
       // 监听节点属性变化
       const originalOnPropertyChanged = node.onPropertyChanged
       node.onPropertyChanged = function (...args: any[]) {
-        scheduleAutoSave()
-        iframeService.notify('node-changed', {
-          id: node.id,
-          property: args[0],
-          value: args[1]
-        })
+        notifyChange()
         return originalOnPropertyChanged?.apply(this, args)
       }
     }
 
-    app.graph.onNodeRemoved = (node: any) => {
-      scheduleAutoSave()
-      iframeService.notify('node-removed', { id: node.id, type: node.type })
-    }
-
-    app.graph.onConnectionChange = (node: any) => {
-      scheduleAutoSave()
-      iframeService.notify('connection-changed', { nodeId: node?.id })
-    }
+    app.graph.onNodeRemoved = () => notifyChange()
+    app.graph.onConnectionChange = () => notifyChange()
   }
+
+  // 初始化监听
+  setupWorkflowChangeListeners()
 
   const workflowService = useWorkflowService()
 
   const iframeAPI = {
+    // 处理父窗口传入的执行进度
+    handleExecutionProgress: (progressData: any) => {
+      console.log('handleExecutionProgress', progressData)
+      const { type, data } = progressData
+
+      // 模拟 WebSocket 事件，触发 ComfyUI 内部的进度更新
+
+      switch (type) {
+        case 'execution_start':
+        case 'execution_cached':
+        case 'executed':
+        case 'progress_state':
+        case 'execution_success':
+        case 'executing':
+        case 'progress':
+          api.dispatchCustomEvent(type, data)
+          break
+      }
+    },
+
     // 上传工作流 - 触发文件选择
     upload: () => {
       app.ui.loadFile()
@@ -358,12 +398,14 @@ const setupIframeAPI = () => {
     reset: () => {
       app.graph.clear()
       app.canvas.draw(true, true)
+      console.log('clear', 'clear')
     },
 
     // 清空画布
     clear: () => {
       app.graph.clear()
       app.canvas.draw(true, true)
+      console.log('clear', 'clear')
     },
 
     getWorkflowInfo: (): Promise<string> => {
@@ -377,11 +419,13 @@ const setupIframeAPI = () => {
     },
 
     // 启用/禁用自动保存
-    enableAutoSave: (enabled: boolean) => {
-      autoSaveEnabled = enabled
-      if (enabled) {
-        setupAutoSaveListeners()
-      }
+    enableAutoSave: () => {
+      autoSaveEnabled = true
+      console.log('receive', 'enableAutoSave')
+    },
+    disableAutoSave: () => {
+      autoSaveEnabled = false
+      console.log('receive', 'disableAutoSave')
     },
 
     // 加载工作流
