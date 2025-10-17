@@ -306,15 +306,15 @@ export class ComfyApi extends EventTarget {
   }
 
   internalURL(route: string): string {
-    return this.api_base + '/internal' + route
+    return `https://${this.api_host}/comfyui/internal${route}`
   }
 
   apiURL(route: string): string {
-    return this.api_base + '/comfyui' + route
+    return `https://${this.api_host}/comfyui${route}`
   }
 
   fileURL(route: string): string {
-    return this.api_base + route
+    return `https://${this.api_host}${route}`
   }
 
   fetchApi(route: string, options?: RequestInit) {
@@ -413,7 +413,7 @@ export class ComfyApi extends EventTarget {
       existingSession = '?clientId=' + existingSession
     }
     this.socket = new WebSocket(
-      `wss://${this.api_host}/comfyui/ws${existingSession}`
+      `ws${window.location.protocol === 'https:' ? 's' : ''}://${this.api_host}${this.api_base}/comfyui/ws${existingSession}`
     )
     this.socket.binaryType = 'arraybuffer'
 
