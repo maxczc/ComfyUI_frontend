@@ -299,8 +299,8 @@ export class ComfyApi extends EventTarget {
   constructor() {
     super()
     this.user = ''
-    this.api_host = location.host
-    this.api_base = location.pathname.split('/').slice(0, -1).join('/')
+    this.api_host = 'dev-sn99.neza.video'
+    this.api_base = ''
     console.log('Running on', this.api_host)
     this.initialClientId = sessionStorage.getItem('clientId')
   }
@@ -310,7 +310,7 @@ export class ComfyApi extends EventTarget {
   }
 
   apiURL(route: string): string {
-    return this.api_base + '/api' + route
+    return this.api_base + '/comfyui' + route
   }
 
   fileURL(route: string): string {
@@ -413,7 +413,7 @@ export class ComfyApi extends EventTarget {
       existingSession = '?clientId=' + existingSession
     }
     this.socket = new WebSocket(
-      `ws${window.location.protocol === 'https:' ? 's' : ''}://${this.api_host}${this.api_base}/ws${existingSession}`
+      `wss://${this.api_host}/comfyui/ws${existingSession}`
     )
     this.socket.binaryType = 'arraybuffer'
 
