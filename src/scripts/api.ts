@@ -306,7 +306,7 @@ export class ComfyApi extends EventTarget {
   }
 
   internalURL(route: string): string {
-    return `https://${this.api_host}/comfyui/internal${route}`
+    return `/internal${route}`
   }
 
   apiURL(route: string): string {
@@ -587,7 +587,7 @@ export class ComfyApi extends EventTarget {
    */
   async getExtensions(): Promise<ExtensionsResponse> {
     const resp = await this.fetchApi('/extensions', { cache: 'no-store' })
-    return await resp.json()
+    return []
   }
 
   /**
